@@ -52,6 +52,7 @@ public:
 
     const char *getSubsystem() { return mSubsystem; }
     Action getAction() { return mAction; }
+    const char *getPath() { return mPath; }
 
     void dump();
 
