@@ -555,6 +555,8 @@ void DeviceHandler::HandleUevent(const Uevent& uevent) {
         return;
     } else if (uevent.subsystem == "misc" && StartsWith(uevent.device_name, "dm-user/")) {
         devpath = "/dev/dm-user/" + uevent.device_name.substr(8);
+    } else if (uevent.subsystem == "tty" && StartsWith(uevent.device_name, "ttyACM")) {
+        devpath = "/dev/shared/" + Basename(uevent.path);
     } else {
         devpath = "/dev/" + Basename(uevent.path);
     }
