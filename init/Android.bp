@@ -145,7 +145,7 @@ libinit_cc_defaults {
         eng: {
             cppflags: [
                 "-USHUTDOWN_ZERO_TIMEOUT",
-                "-DSHUTDOWN_ZERO_TIMEOUT=1",
+                "-DSHUTDOWN_ZERO_TIMEOUT=0",
             ],
         },
         uml: {
@@ -431,7 +431,7 @@ init_first_stage_cc_defaults {
         eng: {
             cflags: [
                 "-USHUTDOWN_ZERO_TIMEOUT",
-                "-DSHUTDOWN_ZERO_TIMEOUT=1",
+                "-DSHUTDOWN_ZERO_TIMEOUT=0",
             ],
         },
     },
