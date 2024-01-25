@@ -8,7 +8,7 @@ on early-init
     export ANDROID_ART_ROOT /apex/com.android.art
     export ANDROID_I18N_ROOT /apex/com.android.i18n
     export ANDROID_TZDATA_ROOT /apex/com.android.tzdata
-    export EXTERNAL_STORAGE /sdcard
+    export EXTERNAL_STORAGE /mnt/softing/softing_sdd_0
     export ASEC_MOUNTPOINT /mnt/asec
     %EXPORT_GLOBAL_ASAN_OPTIONS%
     %EXPORT_GLOBAL_GCOV_OPTIONS%
