@@ -97,6 +97,8 @@ char* locale;
 #define LOGW(x...) KLOG_WARNING("charger", x);
 #define LOGV(x...) KLOG_DEBUG("charger", x);
 
+#define MIN_BATTERY_FOR_BOOT 10
+
 namespace android {
 
 #if defined(__ANDROID_VNDK__)
@@ -643,6 +645,10 @@ void Charger::OnHealthInfoChanged(const ChargerHealthInfo& health_info) {
         kick_animation(&batt_anim_);
     }
     health_info_ = health_info;
+    if (health_info_.battery_level >= MIN_BATTERY_FOR_BOOT) {
+        LOGW("rebooting\n");
+        reboot(RB_AUTOBOOT);
+    }
 }
 
 int Charger::OnPrepareToWait(void) {
