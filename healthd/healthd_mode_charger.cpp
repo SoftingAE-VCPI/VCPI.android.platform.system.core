@@ -97,6 +97,8 @@ char* locale;
 #define LOGW(x...) KLOG_WARNING("charger", x);
 #define LOGV(x...) KLOG_DEBUG("charger", x);
 
+#define MIN_BATTERY_FOR_BOOT 10
+
 namespace android {
 
 #if defined(__ANDROID_VNDK__)
@@ -621,16 +623,9 @@ void Charger::OnHealthInfoChanged(const ChargerHealthInfo& health_info) {
     }
     health_info_ = health_info;
 
-    if (property_get_bool("ro.charger_mode_autoboot", false)) {
-        if (health_info_.battery_level >= boot_min_cap_) {
-            if (property_get_bool("ro.enable_boot_charger_mode", false)) {
-                LOGW("booting from charger mode\n");
-                property_set("sys.boot_from_charger_mode", "1");
-            } else {
-                LOGW("Battery SOC = %d%%, Automatically rebooting\n", health_info_.battery_level);
-                reboot(RB_AUTOBOOT);
-            }
-        }
+    if (health_info_.battery_level >= MIN_BATTERY_FOR_BOOT) {
+        LOGW("rebooting\n");
+        reboot(RB_AUTOBOOT);
     }
 }
 
