@@ -97,6 +97,8 @@ char* locale;
 #define LOGW(x...) KLOG_WARNING("charger", x);
 #define LOGV(x...) KLOG_DEBUG("charger", x);
 
+#define MIN_BATTERY_FOR_BOOT 10
+
 namespace android {
 
 #if defined(__ANDROID_VNDK__)
@@ -522,7 +524,7 @@ void Charger::ProcessKey(int code, int64_t now) {
                 } else {
                     if (batt_anim_.cur_level >= boot_min_cap_) {
                         LOGW("[%" PRId64 "] rebooting\n", now);
-                        reboot(RB_AUTOBOOT);
+                        //reboot(RB_AUTOBOOT);
                     } else {
                         LOGV("[%" PRId64
                              "] ignore power-button press, battery level "
@@ -600,7 +602,7 @@ void Charger::HandlePowerSupplyState(int64_t now) {
                  now, (int64_t)timer_shutdown, next_pwr_check_);
         } else if (now >= next_pwr_check_) {
             LOGW("[%" PRId64 "] shutting down\n", now);
-            reboot(RB_POWER_OFF);
+            //reboot(RB_POWER_OFF);
         } else {
             /* otherwise we already have a shutdown timer scheduled */
         }
@@ -632,6 +634,10 @@ void Charger::OnHeartbeat() {
      * screen transitions (animations, etc)
      */
     UpdateScreenState(now);
+    if (health_info_.battery_level >= MIN_BATTERY_FOR_BOOT) {
+        LOGW("rebooting\n");
+        reboot(RB_AUTOBOOT);
+    }
 }
 
 void Charger::OnHealthInfoChanged(const ChargerHealthInfo& health_info) {

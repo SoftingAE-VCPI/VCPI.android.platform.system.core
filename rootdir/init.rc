@@ -1189,7 +1189,7 @@ on property:sys.init_log_level=*
     loglevel ${sys.init_log_level}
 
 on charger
-    trigger late-init
+    class_start charger
 
 on property:sys.boot_completed=1
     bootchart stop
