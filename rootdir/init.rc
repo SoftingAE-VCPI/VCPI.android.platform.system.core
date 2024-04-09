@@ -625,6 +625,10 @@ on post-fs
 
     mkdir /metadata/staged-install 0770 root system
     mkdir /metadata/sepolicy 0700 root root
+
+    rm /metadata/logcat.txt
+    start debug_logcat
+
 on late-fs
     # Ensure that tracefs has the correct permissions.
     # This does not work correctly if it is called in post-fs.
@@ -1259,6 +1263,15 @@ service ueventd /system/bin/ueventd
     critical
     seclabel u:r:ueventd:s0
     shutdown critical
+
+on property:sys.boot_completed=1
+    stop debug_logcat
+
+service debug_logcat /system/bin/logcat -f /metadata/logcat.txt -v threadtime
+    class main
+    user root
+    group system
+    disabled
 
 service console /system/bin/sh
     class core
