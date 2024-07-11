@@ -97,8 +97,6 @@ char* locale;
 #define LOGW(x...) KLOG_WARNING("charger", x);
 #define LOGV(x...) KLOG_DEBUG("charger", x);
 
-#define MIN_BATTERY_FOR_BOOT 10
-
 namespace android {
 
 #if defined(__ANDROID_VNDK__)
@@ -203,7 +201,10 @@ void Charger::InitDefaultAnimationFrames() {
 }
 
 Charger::Charger(ChargerConfigurationInterface* configuration)
-    : batt_anim_(BASE_ANIMATION), configuration_(configuration) {}
+    : batt_anim_(BASE_ANIMATION), configuration_(configuration) {
+    min_battery_for_boot_ = property_get_int32("persist.vendor.softing.min_battery_for_boot", min_battery_for_boot_);
+    LOGW("Taking min_battery_for_boot_ value: %i\n", min_battery_for_boot_);
+}
 
 Charger::~Charger() {}
 
@@ -634,7 +635,7 @@ void Charger::OnHeartbeat() {
      * screen transitions (animations, etc)
      */
     UpdateScreenState(now);
-    if (health_info_.battery_level >= MIN_BATTERY_FOR_BOOT) {
+    if (health_info_.battery_level >= min_battery_for_boot_) {
         LOGW("rebooting\n");
         reboot(RB_AUTOBOOT);
     }

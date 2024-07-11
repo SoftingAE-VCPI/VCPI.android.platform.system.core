@@ -116,6 +116,7 @@ class Charger {
     int64_t next_key_check_ = 0;
     int64_t next_pwr_check_ = 0;
     int64_t wait_batt_level_timestamp_ = 0;
+    int32_t min_battery_for_boot_{8}; // percentage
 
     DirectRenderManager drm_;
     SrceenSwitch screen_switch_;
