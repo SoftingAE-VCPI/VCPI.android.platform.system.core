@@ -29,6 +29,10 @@
 #include <sys/un.h>
 #include <time.h>
 #include <unistd.h>
+#include <fstream>
+#include <utility>
+#include <sys/stat.h>
+#include <string>
 
 #include <optional>
 
@@ -97,7 +101,10 @@ char* locale;
 #define LOGW(x...) KLOG_WARNING("charger", x);
 #define LOGV(x...) KLOG_DEBUG("charger", x);
 
-#define MIN_BATTERY_FOR_BOOT 10
+inline bool file_exists (const std::string& name) {
+  struct stat buffer;
+  return (stat (name.c_str(), &buffer) == 0);
+}
 
 namespace android {
 
@@ -202,8 +209,17 @@ void Charger::InitDefaultAnimationFrames() {
     };
 }
 
+static const std::string MINBATTFILE = "/oem/softing.min_battery_for_boot";
 Charger::Charger(ChargerConfigurationInterface* configuration)
-    : batt_anim_(BASE_ANIMATION), configuration_(configuration) {}
+    : batt_anim_(BASE_ANIMATION), configuration_(configuration) {
+    char buffer[16]{0};
+    if (file_exists(MINBATTFILE)) {
+        std::ifstream ifs (MINBATTFILE, std::ifstream::in);
+        ifs.getline(buffer,16);
+        min_battery_for_boot_ = std::stoi(buffer);
+    }
+    LOGW("Initialized min_battery_for_boot_ value: %i\n", min_battery_for_boot_);
+}
 
 Charger::~Charger() {}
 
@@ -634,7 +650,8 @@ void Charger::OnHeartbeat() {
      * screen transitions (animations, etc)
      */
     UpdateScreenState(now);
-    if (health_info_.battery_level >= MIN_BATTERY_FOR_BOOT) {
+    LOGW("Taking min_battery_for_boot_ value: %i\n", min_battery_for_boot_);
+    if (health_info_.battery_level >= min_battery_for_boot_) {
         LOGW("rebooting\n");
         reboot(RB_AUTOBOOT);
     }
