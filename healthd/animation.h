@@ -61,6 +61,9 @@ struct animation {
 
     std::string animation_file;
     std::string fail_file;
+    std::string temp_file;
+    std::string temp_font_file;
+    bool overheat = false;
 
     text_field text_clock;
     text_field text_percent;

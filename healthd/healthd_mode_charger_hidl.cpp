@@ -37,6 +37,7 @@ void ChargerHidl::OnHealthInfoChanged(const HealthInfo_2_1& health_info) {
             .battery_level = health_info.legacy.legacy.batteryLevel,
             .battery_status = static_cast<::aidl::android::hardware::health::BatteryStatus>(
                     health_info.legacy.legacy.batteryStatus),
+            .battery_temperature = health_info.legacy.legacy.batteryTemperatureTenthsCelsius,
     });
 
     AdjustWakealarmPeriods(charger_online());

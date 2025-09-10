@@ -15,6 +15,7 @@
  */
 
 #include <android-base/stringprintf.h>
+#include <android-base/file.h>
 #include <batteryservice/BatteryService.h>
 #include <cutils/klog.h>
 
@@ -77,11 +78,14 @@ HealthdDraw::HealthdDraw(animation* anim)
         (res = gr_init_font(anim->text_percent.font_file.c_str(), &anim->text_percent.font)) < 0) {
         LOGE("Could not load percent font (%d)\n", res);
     }
+    if ((res = gr_init_font(anim->temp_font_file.c_str(), &temp_font)) < 0) {
+        LOGE("Could not load temp_font file from %s (%d)\n", anim->temp_font_file.c_str(), res);
+    }
 }
 
 HealthdDraw::~HealthdDraw() {}
 
-void HealthdDraw::redraw_screen(const animation* batt_anim, GRSurface* surf_unknown) {
+void HealthdDraw::redraw_screen(const animation* batt_anim, GRSurface* surf_unknown, GRSurface* surf_temp) {
     if (!graphics_available) return;
     clear_screen();
 
@@ -89,14 +93,17 @@ void HealthdDraw::redraw_screen(const animation* batt_anim, GRSurface* surf_unkn
     if (batt_anim->cur_status == BATTERY_STATUS_UNKNOWN || batt_anim->cur_level < 0 ||
         batt_anim->num_frames == 0)
         draw_unknown(surf_unknown);
-    else
+    else if (batt_anim->overheat) {
+        overheat = true;
+        draw_temp(surf_temp);
+    } else
         draw_battery(batt_anim);
     gr_flip();
 }
 
 void HealthdDraw::blank_screen(bool blank, int drm) {
     if (!graphics_available) return;
-    gr_fb_blank(blank, drm);
+    gr_fb_blank(!overheat && blank, drm);
 }
 
 // support screen rotation for foldable phone
@@ -144,8 +151,8 @@ int HealthdDraw::draw_text(const GRFont* font, int x, int y, const char* str) {
 
     if (x < 0) x = (screen_width_ - str_len_px) / 2;
     if (y < 0) y = (screen_height_ - char_height_) / 2;
-    gr_text(font, x + kSplitOffset, y, str, false /* bold */);
-    if (kSplitScreen) gr_text(font, x - kSplitOffset + screen_width_, y, str, false /* bold */);
+    gr_text(font, x + kSplitOffset, y, str, true /* bold */);
+    if (kSplitScreen) gr_text(font, x - kSplitOffset + screen_width_, y, str, true /* bold */);
 
     return y + char_height_;
 }
@@ -253,6 +260,18 @@ void HealthdDraw::draw_unknown(GRSurface* surf_unknown) {
   } else {
       LOGW("Charging, level unknown\n");
   }
+}
+
+void HealthdDraw::draw_temp(GRSurface* surf_temp) {
+    int y = 0;
+    gr_color(255, 255, 255, 255);
+    if (surf_temp) {
+        y = draw_surface_centered(surf_temp);
+    }
+    if (temp_font) {
+        y = draw_text(temp_font, -1, y == 0 ? -1 : y + 50, "Device too hot!");
+        draw_text(temp_font, -1, y + 50, "Device will boot once it cools down");
+    }
 }
 
 std::unique_ptr<HealthdDraw> HealthdDraw::Create(animation *anim) {
