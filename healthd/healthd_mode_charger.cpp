@@ -350,7 +350,6 @@ void Charger::UpdateScreenState(int64_t now) {
         next_screen_transition_ = curr_time_ms() + (10 * MSEC_PER_SEC);
         return;
     }
-
     /* animation is over, blank screen and leave */
     if (batt_anim_.num_cycles > 0 && batt_anim_.cur_cycle == batt_anim_.num_cycles) {
         reset_animation(&batt_anim_);
