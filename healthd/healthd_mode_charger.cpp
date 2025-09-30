@@ -101,7 +101,7 @@ char* locale;
 #define LOGW(x...) KLOG_WARNING("charger", x);
 #define LOGV(x...) KLOG_DEBUG("charger", x);
 
-#define REBOOT_SAFE_TEMPERATURE 500  // 50.0C
+#define REBOOT_SAFE_TEMPERATURE 450  // 45.0C
 
 inline bool file_exists (const std::string& name) {
   struct stat buffer;
