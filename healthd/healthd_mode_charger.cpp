@@ -822,10 +822,8 @@ void Charger::OnInit(struct healthd_config* config) {
 
     ret = CreateDisplaySurface(batt_anim_.temp_file, &surf_temp_);
     if (ret < 0) {
-        if (ret < 0) {
-            LOGE("Cannot load built in high_temp image\n");
-            surf_temp_ = NULL;
-        }
+        LOGE("Cannot load built in high_temp image\n");
+        surf_temp_ = NULL;
     }
 
     GRSurface** scale_frames;
