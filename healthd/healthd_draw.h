@@ -29,7 +29,7 @@ class HealthdDraw {
   virtual ~HealthdDraw();
 
   // Redraws screen.
-  void redraw_screen(const animation* batt_anim, GRSurface* surf_unknown);
+  void redraw_screen(const animation* batt_anim, GRSurface* surf_unknown, GRSurface* surf_temp);
 
   // According to the index of Direct Rendering Manager,
   // Blanks screen if true, unblanks if false.
@@ -64,7 +64,8 @@ class HealthdDraw {
   virtual void draw_percent(const animation* anim);
   // Draws charger->surf_unknown or basic text.
   virtual void draw_unknown(GRSurface* surf_unknown);
-
+  // Draws high temperature warning image & text.
+  virtual void draw_temp(GRSurface* surf_temp);
   // Pixel sizes of characters for default font.
   int char_width_;
   int char_height_;
@@ -80,7 +81,8 @@ class HealthdDraw {
 
   // system text font, may be nullptr
   const GRFont* sys_font;
-
+  GRFont* temp_font;
+  bool overheat;
   // true if minui init'ed OK, false if minui init failed
   bool graphics_available;
 

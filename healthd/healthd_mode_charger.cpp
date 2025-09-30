@@ -101,6 +101,8 @@ char* locale;
 #define LOGW(x...) KLOG_WARNING("charger", x);
 #define LOGV(x...) KLOG_DEBUG("charger", x);
 
+#define REBOOT_SAFE_TEMPERATURE 450  // 45.0C
+
 inline bool file_exists (const std::string& name) {
   struct stat buffer;
   return (stat (name.c_str(), &buffer) == 0);
@@ -304,7 +306,7 @@ static void kick_animation(animation* anim) {
 static void reset_animation(animation* anim) {
     anim->cur_cycle = 0;
     anim->cur_frame = 0;
-    anim->run = false;
+    if (!anim->overheat) anim->run = false;
 }
 
 void Charger::BlankSecScreen() {
@@ -313,7 +315,7 @@ void Charger::BlankSecScreen() {
     if (!init_screen_) {
         /* blank the secondary screen */
         healthd_draw_->blank_screen(false, drm);
-        healthd_draw_->redraw_screen(&batt_anim_, surf_unknown_);
+        healthd_draw_->redraw_screen(&batt_anim_, surf_unknown_, surf_temp_);
         healthd_draw_->blank_screen(true, drm);
         init_screen_ = true;
     }
@@ -361,8 +363,14 @@ void Charger::UpdateScreenState(int64_t now) {
             screen_blanked_ = true;
         }
 #endif
+    } else if (batt_anim_.overheat) {
+        if (!android::base::WriteStringToFile("500",
+                    "/sys/class/backlight/panel0-backlight/brightness")) {
+            LOGW("Failed to set brightness");
+        }
+        next_screen_transition_ = curr_time_ms() + (10 * MSEC_PER_SEC);
+        return;
     }
-
     /* animation is over, blank screen and leave */
     if (batt_anim_.num_cycles > 0 && batt_anim_.cur_cycle == batt_anim_.num_cycles) {
         reset_animation(&batt_anim_);
@@ -422,8 +430,12 @@ void Charger::UpdateScreenState(int64_t now) {
         }
     }
 
+    if (health_info_.battery_temperature >= REBOOT_SAFE_TEMPERATURE) {
+        LOGW("device too hot\n");
+        batt_anim_.overheat = true;
+    }
     /* draw the new frame (@ cur_frame) */
-    healthd_draw_->redraw_screen(&batt_anim_, surf_unknown_);
+    healthd_draw_->redraw_screen(&batt_anim_, surf_unknown_, surf_temp_);
 
     /* if we don't have anim frames, we only have one image, so just bump
      * the cycle counter and exit
@@ -650,8 +662,8 @@ void Charger::OnHeartbeat() {
      * screen transitions (animations, etc)
      */
     UpdateScreenState(now);
-    LOGW("Taking min_battery_for_boot_ value: %i\n", min_battery_for_boot_);
-    if (health_info_.battery_level >= min_battery_for_boot_) {
+    LOGW(" OnHeartbeat : battery level=%i, temperature=%i min_battery_for_boot_=%i \n", health_info_.battery_level, health_info_.battery_temperature, min_battery_for_boot_);
+    if ((health_info_.battery_level >= min_battery_for_boot_) && (health_info_.battery_temperature < REBOOT_SAFE_TEMPERATURE)) {
         LOGW("rebooting\n");
         reboot(RB_AUTOBOOT);
     }
@@ -756,6 +768,9 @@ void Charger::InitAnimation() {
         batt_anim_.fail_file.assign(default_animation_root + "charger/battery_fail.png"s);
     }
 
+    batt_anim_.temp_file.assign(default_animation_root + "charger/high_temp.png"s);
+    batt_anim_.temp_font_file.assign(default_animation_root + "charger/temp_font.png"s);
+
     LOGV("Animation Description:\n");
     LOGV("  animation: %d %d '%s' (%d)\n", batt_anim_.num_cycles, batt_anim_.first_frame_repeats,
          batt_anim_.animation_file.c_str(), batt_anim_.num_frames);
@@ -803,6 +818,12 @@ void Charger::OnInit(struct healthd_config* config) {
             LOGE("Cannot load built in battery_fail image\n");
             surf_unknown_ = NULL;
         }
+    }
+
+    ret = CreateDisplaySurface(batt_anim_.temp_file, &surf_temp_);
+    if (ret < 0) {
+        LOGE("Cannot load built in high_temp image\n");
+        surf_temp_ = NULL;
     }
 
     GRSurface** scale_frames;
