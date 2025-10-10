@@ -42,6 +42,7 @@ struct key_state {
 struct ChargerHealthInfo {
     int32_t battery_level;
     aidl::android::hardware::health::BatteryStatus battery_status;
+    int32_t battery_temperature;
 };
 
 enum DirectRenderManager {
@@ -117,6 +118,7 @@ class Charger {
     int64_t next_key_check_ = 0;
     int64_t next_pwr_check_ = 0;
     int64_t wait_batt_level_timestamp_ = 0;
+    int32_t min_battery_for_boot_{8}; // percentage
 
     DirectRenderManager drm_;
     SrceenSwitch screen_switch_;
@@ -125,6 +127,7 @@ class Charger {
 
     animation batt_anim_;
     GRSurface* surf_unknown_ = nullptr;
+    GRSurface* surf_temp_ = nullptr;
     int boot_min_cap_ = 0;
 
     ChargerHealthInfo health_info_ = {};
