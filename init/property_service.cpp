@@ -692,6 +692,11 @@ static void handle_property_set_fd(int fd) {
 }
 
 uint32_t InitPropertySet(const std::string& name, const std::string& value) {
+    // Skip setting ro.boot.mode property
+    if (name == "ro.boot.mode") {
+        return PROP_SUCCESS;
+    }
+
     ucred cr = {.pid = 1, .uid = 0, .gid = 0};
     std::string error;
     auto result = HandlePropertySetNoSocket(name, value, kInitContext, cr, &error);

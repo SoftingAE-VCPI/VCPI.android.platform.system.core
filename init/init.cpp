@@ -1094,6 +1094,8 @@ int SecondStageMain(int argc, char** argv) {
     std::string boot_reason = "";
     if (ReadFileToString(LAST_REBOOT_REASON_FILE, &boot_reason) &&
             boot_reason.find("thermal") != std::string::npos) {
+        SetProperty("ro.boot.mode", "charger");
+        SetProperty("ro.bootmode", "charger");
         am.QueueEventTrigger("charger");
     } else {
         am.QueueEventTrigger("late-init");
