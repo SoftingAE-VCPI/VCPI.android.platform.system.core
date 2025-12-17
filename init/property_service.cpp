@@ -1319,7 +1319,6 @@ static void ExportKernelBootProps() {
     } prop_map[] = {
             // clang-format off
         { "ro.boot.serialno",   "ro.serialno",   UNSET, },
-        { "ro.boot.mode",       "ro.bootmode",   "unknown", },
         { "ro.boot.baseband",   "ro.baseband",   "unknown", },
         { "ro.boot.bootloader", "ro.bootloader", "unknown", },
         { "ro.boot.hardware",   "ro.hardware",   "unknown", },

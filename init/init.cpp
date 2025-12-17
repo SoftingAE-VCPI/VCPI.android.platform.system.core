@@ -91,6 +91,7 @@
 #include "subcontext.h"
 #include "system/core/init/property_service.pb.h"
 #include "util.h"
+#include <cutils/android_reboot.h>
 
 #ifndef RECOVERY
 #include "com_android_apex.h"
@@ -1089,7 +1090,10 @@ int SecondStageMain(int argc, char** argv) {
 
     // Don't mount filesystems or start core system services in charger mode.
     std::string bootmode = GetProperty("ro.bootmode", "");
-    if (bootmode == "charger") {
+    // Reboot to charger mode only if device was shutdown due to thermal reasons.
+    std::string boot_reason = "";
+    if (ReadFileToString(LAST_REBOOT_REASON_FILE, &boot_reason) &&
+            boot_reason.find("thermal") != std::string::npos) {
         am.QueueEventTrigger("charger");
     } else {
         am.QueueEventTrigger("late-init");

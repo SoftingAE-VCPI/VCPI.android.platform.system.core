@@ -636,7 +636,7 @@ void Charger::OnHeartbeat() {
     LOGW(" OnHeartbeat : battery level=%i, temperature=%i\n", health_info_.battery_level, health_info_.battery_temperature);
     if (health_info_.battery_temperature < REBOOT_SAFE_TEMPERATURE) {
         LOGW("rebooting\n");
-        reboot(RB_AUTOBOOT);
+        property_set("sys.powerctl", "reboot,battery-cooldown");
     }
 }
 
