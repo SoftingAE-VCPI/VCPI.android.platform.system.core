@@ -692,6 +692,11 @@ static void handle_property_set_fd(int fd) {
 }
 
 uint32_t InitPropertySet(const std::string& name, const std::string& value) {
+    // Skip setting ro.boot.mode property
+    if (name == "ro.boot.mode") {
+        return PROP_SUCCESS;
+    }
+
     ucred cr = {.pid = 1, .uid = 0, .gid = 0};
     std::string error;
     auto result = HandlePropertySetNoSocket(name, value, kInitContext, cr, &error);
@@ -1319,7 +1324,6 @@ static void ExportKernelBootProps() {
     } prop_map[] = {
             // clang-format off
         { "ro.boot.serialno",   "ro.serialno",   UNSET, },
-        { "ro.boot.mode",       "ro.bootmode",   "unknown", },
         { "ro.boot.baseband",   "ro.baseband",   "unknown", },
         { "ro.boot.bootloader", "ro.bootloader", "unknown", },
         { "ro.boot.hardware",   "ro.hardware",   "unknown", },

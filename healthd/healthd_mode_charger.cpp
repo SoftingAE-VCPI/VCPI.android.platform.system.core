@@ -211,16 +211,8 @@ void Charger::InitDefaultAnimationFrames() {
     };
 }
 
-static const std::string MINBATTFILE = "/oem/softing.min_battery_for_boot";
 Charger::Charger(ChargerConfigurationInterface* configuration)
     : batt_anim_(BASE_ANIMATION), configuration_(configuration) {
-    char buffer[16]{0};
-    if (file_exists(MINBATTFILE)) {
-        std::ifstream ifs (MINBATTFILE, std::ifstream::in);
-        ifs.getline(buffer,16);
-        min_battery_for_boot_ = std::stoi(buffer);
-    }
-    LOGW("Initialized min_battery_for_boot_ value: %i\n", min_battery_for_boot_);
 }
 
 Charger::~Charger() {}
@@ -641,10 +633,10 @@ void Charger::OnHeartbeat() {
      * screen transitions (animations, etc)
      */
     UpdateScreenState(now);
-    LOGW(" OnHeartbeat : battery level=%i, temperature=%i min_battery_for_boot_=%i \n", health_info_.battery_level, health_info_.battery_temperature, min_battery_for_boot_);
-    if ((health_info_.battery_level >= min_battery_for_boot_) && (health_info_.battery_temperature < REBOOT_SAFE_TEMPERATURE)) {
+    LOGW(" OnHeartbeat : battery level=%i, temperature=%i\n", health_info_.battery_level, health_info_.battery_temperature);
+    if (health_info_.battery_temperature < REBOOT_SAFE_TEMPERATURE) {
         LOGW("rebooting\n");
-        reboot(RB_AUTOBOOT);
+        property_set("sys.powerctl", "reboot,battery-cooldown");
     }
 }
 
