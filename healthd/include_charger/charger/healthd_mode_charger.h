@@ -28,6 +28,8 @@
 
 #include "animation.h"
 
+#define REBOOT_SAFE_TEMPERATURE 450  // 45.0C
+
 class GRSurface;
 class HealthdDraw;
 
@@ -134,5 +136,6 @@ class Charger {
     std::vector<animation::frame> owned_frames_;
 
     ChargerConfigurationInterface* configuration_;
+    int boot_safe_temp_ = REBOOT_SAFE_TEMPERATURE;
 };
 }  // namespace android
