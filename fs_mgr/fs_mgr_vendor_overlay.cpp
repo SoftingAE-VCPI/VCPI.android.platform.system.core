@@ -110,11 +110,17 @@ bool fs_mgr_vendor_overlay_mount(const std::pair<std::string, std::string>& moun
 bool fs_mgr_vendor_overlay_mount_all() {
     // To read the property, it must be called at the second init stage after the default
     // properties are loaded.
-    static const auto vndk_version = android::base::GetProperty(kVndkVersionPropertyName, "");
+    std::string vndk_version = android::base::GetProperty("ro.vndk.version", "");
+
+    // If VNDK is empty, attempt to fall back to the SDK version
     if (vndk_version.empty()) {
-        // Vendor overlay is disabled from VNDK deprecated devices.
-        LINFO << "vendor overlay: vndk version not defined";
-        return false;
+        vndk_version = android::base::GetProperty("ro.build.version.sdk", "");
+
+        // If both are completely missing, we must abort
+        if (vndk_version.empty()) {
+            LINFO << "vendor overlay: neither vndk version nor sdk version defined";
+            return false;
+        }
     }
 
     const auto vendor_overlay_dirs = fs_mgr_get_vendor_overlay_dirs(vndk_version);
