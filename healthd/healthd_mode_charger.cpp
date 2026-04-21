@@ -39,6 +39,7 @@
 #include <android-base/file.h>
 #include <android-base/logging.h>
 #include <android-base/macros.h>
+#include <android-base/parseint.h>
 #include <android-base/strings.h>
 
 #include <linux/netlink.h>
@@ -101,8 +102,6 @@ char* locale;
 #define LOGW(x...) KLOG_WARNING("charger", x);
 #define LOGV(x...) KLOG_DEBUG("charger", x);
 
-#define REBOOT_SAFE_TEMPERATURE 450  // 45.0C
-
 inline bool file_exists (const std::string& name) {
   struct stat buffer;
   return (stat (name.c_str(), &buffer) == 0);
@@ -128,9 +127,10 @@ static constexpr const char* system_animation_root = "/system/etc/res/images/";
 // both paths.
 static constexpr const char* product_animation_desc_path =
         "/product/etc/res/values/charger/animation.txt";
-static constexpr const char* product_animation_root = "/product/etc/res/images/";
 static constexpr const char* animation_desc_path = "/res/values/charger/animation.txt";
 #endif
+
+static constexpr const char* product_animation_root = "/product/etc/res/images/";
 
 static const animation BASE_ANIMATION = {
     .text_clock =
@@ -401,7 +401,7 @@ void Charger::UpdateScreenState(int64_t now) {
         }
     }
 
-    if (health_info_.battery_temperature >= REBOOT_SAFE_TEMPERATURE) {
+    if (health_info_.battery_temperature >= boot_safe_temp_) {
         LOGW("device too hot\n");
         batt_anim_.overheat = true;
     }
@@ -601,7 +601,7 @@ void Charger::HandlePowerSupplyState(int64_t now) {
                  now, (int64_t)timer_shutdown, next_pwr_check_);
         } else if (now >= next_pwr_check_) {
             LOGW("[%" PRId64 "] shutting down\n", now);
-            //reboot(RB_POWER_OFF);
+            reboot(RB_POWER_OFF);
         } else {
             /* otherwise we already have a shutdown timer scheduled */
         }
@@ -632,9 +632,20 @@ void Charger::OnHeartbeat() {
     /* do screen update last in case any of the above want to start
      * screen transitions (animations, etc)
      */
+    std::string boot_temp_str = "";
+    if (base::ReadFileToString("/metadata/bootstat/boot.battery_temperature", &boot_temp_str)) {
+        boot_temp_str = android::base::Trim(boot_temp_str);
+        android::base::ParseInt(boot_temp_str, &boot_safe_temp_);
+        LOGW("boot_safe_temp_ from  /metadata/bootstat/boot.battery_temperature is %d" , boot_safe_temp_);
+        std::string err;
+        if (!base::RemoveFileIfExists("/metadata/bootstat/boot.battery_temperature", &err)) {
+            LOGE("Failed to remove /metadata/bootstat/boot.battery_temperature, err=%s", err.c_str());
+        }
+    }
     UpdateScreenState(now);
-    LOGW(" OnHeartbeat : battery level=%i, temperature=%i\n", health_info_.battery_level, health_info_.battery_temperature);
-    if (health_info_.battery_temperature < REBOOT_SAFE_TEMPERATURE) {
+    LOGW(" OnHeartbeat : battery level=%i, boot_safe_temperature=%i, battery_temperature=%i\n", health_info_.battery_level,
+            boot_safe_temp_, health_info_.battery_temperature);
+    if (health_info_.battery_temperature < boot_safe_temp_) {
         LOGW("rebooting\n");
         property_set("sys.powerctl", "reboot,battery-cooldown");
     }
@@ -739,8 +750,8 @@ void Charger::InitAnimation() {
         batt_anim_.fail_file.assign(default_animation_root + "charger/battery_fail.png"s);
     }
 
-    batt_anim_.temp_file.assign(default_animation_root + "charger/high_temp.png"s);
-    batt_anim_.temp_font_file.assign(default_animation_root + "charger/temp_font.png"s);
+    batt_anim_.temp_file.assign(product_animation_root + "charger/high_temp.png"s);
+    batt_anim_.temp_font_file.assign(product_animation_root + "charger/temp_font.png"s);
 
     LOGV("Animation Description:\n");
     LOGV("  animation: %d %d '%s' (%d)\n", batt_anim_.num_cycles, batt_anim_.first_frame_repeats,
