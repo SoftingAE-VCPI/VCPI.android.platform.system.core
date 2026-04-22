@@ -693,18 +693,15 @@ static void handle_property_set_fd(int fd) {
 
 uint32_t InitPropertySet(const std::string& name, const std::string& value) {
     // Skip setting ro.boot.mode property
-    const std::string* target_name = &name;
-    std::string override_name;
     if (name == "ro.boot.mode") {
-        override_name = "ro.system.boot.mode";
-        target_name = &override_name;
+        return PROP_SUCCESS;
     }
 
     ucred cr = {.pid = 1, .uid = 0, .gid = 0};
     std::string error;
-    auto result = HandlePropertySetNoSocket(*target_name, value, kInitContext, cr, &error);
+    auto result = HandlePropertySetNoSocket(name, value, kInitContext, cr, &error);
     if (result != PROP_SUCCESS) {
-        LOG(ERROR) << "Init cannot set '" << *target_name << "' to '" << value << "': " << error;
+        LOG(ERROR) << "Init cannot set '" << name << "' to '" << value << "': " << error;
     }
 
     return result;
