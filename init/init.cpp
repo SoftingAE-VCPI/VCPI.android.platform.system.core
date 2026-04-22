@@ -1089,10 +1089,10 @@ int SecondStageMain(int argc, char** argv) {
     am.QueueEventTrigger("init");
 
     // Don't mount filesystems or start core system services in charger mode.
-    std::string bootmode = GetProperty("ro.system.boot.mode", "");
+    std::string bootmode = GetProperty("ro.bootmode", "");
     // Reboot to charger mode only if device was shutdown due to thermal reasons.
     std::string boot_reason = "";
-    if (bootmode == "charger" && ReadFileToString(LAST_REBOOT_REASON_FILE, &boot_reason) &&
+    if (ReadFileToString(LAST_REBOOT_REASON_FILE, &boot_reason) &&
             boot_reason.find("thermal") != std::string::npos) {
         SetProperty("ro.boot.mode", "charger");
         SetProperty("ro.bootmode", "charger");
