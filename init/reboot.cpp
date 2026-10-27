@@ -570,6 +570,22 @@ static void StopServices(const std::set<std::string>& services, std::chrono::mil
     }
 }
 
+
+static void StopServicesAndWaitForLxc(const std::set<std::string>& services,
+                                      Service* lxc_service,) {
+    auto lxc_shutdown_timeout = 30s;
+    const pid_t lxc_pid = lxc_service->pid();                                        
+    StopServices(services, 0ms, true /* SIGTERM */);
+    if (lxc_service->IsRunning() && lxc_pid > 0) {
+        WaitToBeReaped(Service::GetSigchldFd(), std::vector<pid_t>{lxc_pid}, lxc_shutdown_timeout);
+    }
+    for (const auto& s : ServiceList::GetInstance().services_in_shutdown_order()) {
+        if (services.count(s->name()) && s->IsRunning()) {
+            LOG(ERROR) << "[service-misbehaving] : service '" << s->name()
+                       << "' is still running";
+        }
+    }
+}
 // Like StopServices, but also logs all the services that failed to stop after the provided timeout.
 // Returns number of violators.
 int StopServicesAndLogViolations(const std::set<std::string>& services,
@@ -732,8 +748,14 @@ static void DoReboot(unsigned int cmd, const std::string& reason, const std::str
     // optional shutdown step
     // 1. terminate all services except shutdown critical ones. wait for delay to finish
     if (shutdown_timeout > 0ms) {
-        StopServicesAndLogViolations(stop_first, shutdown_timeout / 2, true /* SIGTERM */);
+        Service* lxc_service = ServiceList::GetInstance().FindService("lxc");
+        if (lxc_service != nullptr && stop_first.count("lxc") && lxc_service->IsRunning()) {
+            StopServicesAndWaitForLxc(stop_first, lxc_service);
+        } else {
+            StopServicesAndLogViolations(stop_first, shutdown_timeout / 2, true /* SIGTERM */);
+        }
     }
+
     // Send SIGKILL to ones that didn't terminate cleanly.
     StopServicesAndLogViolations(stop_first, 0ms, false /* SIGKILL */);
     SubcontextTerminate();
