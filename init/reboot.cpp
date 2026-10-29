@@ -572,7 +572,7 @@ static void StopServices(const std::set<std::string>& services, std::chrono::mil
 
 
 static void StopServicesAndWaitForLxc(const std::set<std::string>& services,
-                                      Service* lxc_service,) {
+                                      Service* lxc_service) {
     auto lxc_shutdown_timeout = 30s;
     const pid_t lxc_pid = lxc_service->pid();                                        
     StopServices(services, 0ms, true /* SIGTERM */);
