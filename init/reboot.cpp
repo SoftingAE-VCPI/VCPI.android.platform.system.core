@@ -573,11 +573,15 @@ static void StopServices(const std::set<std::string>& services, std::chrono::mil
 
 static void StopServicesAndWaitForLxc(const std::set<std::string>& services,
                                       Service* lxc_service) {
-    auto lxc_shutdown_timeout = 30s;
-    const pid_t lxc_pid = lxc_service->pid();                                        
+    constexpr auto lxc_shutdown_timeout = 50s;
+    const pid_t lxc_pid = lxc_service->pid();
     StopServices(services, 0ms, true /* SIGTERM */);
     if (lxc_service->IsRunning() && lxc_pid > 0) {
         WaitToBeReaped(Service::GetSigchldFd(), std::vector<pid_t>{lxc_pid}, lxc_shutdown_timeout);
+        if (lxc_service->IsRunning()) {
+            LOG(ERROR) << "LXC service pid " << lxc_pid << " did not exit within "
+                       << lxc_shutdown_timeout.count() << "s after SIGTERM";
+        }
     }
     for (const auto& s : ServiceList::GetInstance().services_in_shutdown_order()) {
         if (services.count(s->name()) && s->IsRunning()) {
